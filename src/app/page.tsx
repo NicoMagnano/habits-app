@@ -10,6 +10,7 @@ import {
 } from '@/components';
 import { Habit } from '@/types';
 import { TrendingUp } from 'lucide-react';
+import { fetchHabits, createHabit, updateHabit, deleteHabit } from '@/lib/habitService';
 
 export default function Home() {
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -17,58 +18,79 @@ export default function Home() {
     'dashboard'
   );
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Load habits from localStorage on component mount
+  // Load habits from Supabase on component mount
   useEffect(() => {
-    const savedHabits = localStorage.getItem('habits');
-    if (savedHabits) {
+    const loadHabits = async () => {
       try {
-        const parsed = JSON.parse(savedHabits);
-        setHabits(parsed);
+        setIsLoading(true);
+        const data = await fetchHabits();
+        setHabits(data);
       } catch (error) {
         console.error('Error loading habits:', error);
+      } finally {
+        setIsLoading(false);
+        setIsLoaded(true);
       }
-    }
-    setIsLoaded(true);
+    };
+    loadHabits();
   }, []);
 
-  // Save habits to localStorage whenever they change
-  useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem('habits', JSON.stringify(habits));
+  const handleAddHabit = async (habitData: Omit<Habit, 'id' | 'completedDates' | 'createdAt'>) => {
+    try {
+      const newHabitData: Omit<Habit, 'id' | 'createdAt'> = {
+        ...habitData,
+        completedDates: [],
+      };
+      const newHabit = await createHabit(newHabitData);
+      if (newHabit) {
+        const mappedHabit: Habit = {
+          id: newHabit.id,
+          name: newHabit.name,
+          description: newHabit.description,
+          dailyGoal: newHabit.daily_goal,
+          color: newHabit.color,
+          createdAt: new Date(newHabit.created_at),
+          completedDates: newHabit.completed_dates || [],
+        };
+        setHabits([...habits, mappedHabit]);
+      }
+    } catch (error) {
+      console.error('Error adding habit:', error);
     }
-  }, [habits, isLoaded]);
-
-  const handleAddHabit = (habitData: Omit<Habit, 'id' | 'completedDates' | 'createdAt'>) => {
-    const newHabit: Habit = {
-      id: Math.random().toString(36).substr(2, 9),
-      ...habitData,
-      createdAt: new Date(),
-      completedDates: [],
-    };
-    setHabits([...habits, newHabit]);
   };
 
-  const handleToggleHabit = (habitId: string) => {
-    const today = format(new Date(), 'yyyy-MM-dd');
-    setHabits(
-      habits.map((habit) => {
-        if (habit.id === habitId) {
-          const isCompleted = habit.completedDates.includes(today);
-          return {
-            ...habit,
-            completedDates: isCompleted
-              ? habit.completedDates.filter((date) => date !== today)
-              : [...habit.completedDates, today],
-          };
-        }
-        return habit;
-      })
-    );
+  const handleToggleHabit = async (habitId: string) => {
+    try {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const habit = habits.find((h) => h.id === habitId);
+      if (!habit) return;
+
+      const isCompleted = habit.completedDates.includes(today);
+      const updatedDates = isCompleted
+        ? habit.completedDates.filter((date) => date !== today)
+        : [...habit.completedDates, today];
+
+      await updateHabit(habitId, { completedDates: updatedDates });
+      
+      setHabits(
+        habits.map((h) =>
+          h.id === habitId ? { ...h, completedDates: updatedDates } : h
+        )
+      );
+    } catch (error) {
+      console.error('Error toggling habit:', error);
+    }
   };
 
-  const handleDeleteHabit = (habitId: string) => {
-    setHabits(habits.filter((habit) => habit.id !== habitId));
+  const handleDeleteHabit = async (habitId: string) => {
+    try {
+      await deleteHabit(habitId);
+      setHabits(habits.filter((habit) => habit.id !== habitId));
+    } catch (error) {
+      console.error('Error deleting habit:', error);
+    }
   };
 
   return (
