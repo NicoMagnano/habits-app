@@ -7,8 +7,8 @@ import { es } from 'date-fns/locale';
 
 interface DashboardViewProps {
   habits: Habit[];
-  onToggleHabit: (habitId: string) => void;
-  onDeleteHabit: (habitId: string) => void;
+  onToggleHabit: (habitId: string) => Promise<void>;
+  onDeleteHabit: (habitId: string) => Promise<void>;
 }
 
 export function DashboardView({

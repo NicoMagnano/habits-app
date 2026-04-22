@@ -5,7 +5,7 @@ import { Plus, X } from 'lucide-react';
 import { Habit } from '@/types';
 
 interface AddHabitFormProps {
-  onAddHabit: (habit: Omit<Habit, 'id' | 'completedDates' | 'createdAt'>) => void;
+  onAddHabit: (habit: Omit<Habit, 'id' | 'completedDates' | 'createdAt'>) => Promise<void>;
 }
 
 const colors = [
@@ -26,10 +26,10 @@ export function AddHabitForm({ onAddHabit }: AddHabitFormProps) {
     color: colors[0],
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.name.trim()) {
-      onAddHabit({
+      await onAddHabit({
         name: formData.name,
         description: formData.description,
         dailyGoal: formData.dailyGoal,

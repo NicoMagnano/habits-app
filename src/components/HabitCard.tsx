@@ -8,8 +8,8 @@ import { es } from 'date-fns/locale';
 interface HabitCardProps {
   habit: Habit;
   isCompletedToday: boolean;
-  onToggle: (habitId: string) => void;
-  onDelete: (habitId: string) => void;
+  onToggle: (habitId: string) => Promise<void>;
+  onDelete: (habitId: string) => Promise<void>;
 }
 
 export function HabitCard({
@@ -36,7 +36,7 @@ export function HabitCard({
           </p>
         </div>
         <button
-          onClick={() => onDelete(habit.id)}
+          onClick={async () => await onDelete(habit.id)}
           className="text-zinc-400 hover:text-red-500 transition-colors p-2 -mr-2"
           aria-label="Eliminar hábito"
         >
@@ -47,7 +47,7 @@ export function HabitCard({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => onToggle(habit.id)}
+            onClick={async () => await onToggle(habit.id)}
             className="flex-shrink-0 focus:outline-none"
             aria-label={
               isCompletedToday
