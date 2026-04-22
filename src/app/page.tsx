@@ -7,21 +7,64 @@ import {
   DashboardView,
   ReportsView,
   TabNavigation,
+  Auth,
 } from '@/components';
 import { Habit } from '@/types';
 import { TrendingUp } from 'lucide-react';
 import { fetchHabits, createHabit, updateHabit, deleteHabit } from '@/lib/habitService';
+import { supabase } from '@/lib/supabase';
+
+interface User {
+  email: string;
+}
 
 export default function Home() {
   const [habits, setHabits] = useState<Habit[]>([]);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'reports'>(
-    'dashboard'
-  );
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'reports'>('dashboard');
   const [isLoaded, setIsLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
 
-  // Load habits from Supabase on component mount
+  // Check authentication and load user
   useEffect(() => {
+    const checkUser = async () => {
+      try {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser?.email) {
+          setUser({ email: authUser.email });
+        }
+      } catch (error) {
+        console.error('Error checking user:', error);
+      }
+    };
+
+    checkUser();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user?.email) {
+          setUser({ email: session.user.email });
+        } else {
+          setUser(null);
+        }
+      }
+    );
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, []);
+
+  // Load habits when user changes
+  useEffect(() => {
+    if (!user) {
+      setHabits([]);
+      setIsLoaded(true);
+      setIsLoading(false);
+      return;
+    }
+
     const loadHabits = async () => {
       try {
         setIsLoading(true);
@@ -35,7 +78,16 @@ export default function Home() {
       }
     };
     loadHabits();
-  }, []);
+  }, [user]);
+
+  const handleAuthChange = async () => {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (authUser?.email) {
+      setUser({ email: authUser.email });
+    } else {
+      setUser(null);
+    }
+  };
 
   const handleAddHabit = async (habitData: Omit<Habit, 'id' | 'completedDates' | 'createdAt'>) => {
     try {
@@ -93,6 +145,11 @@ export default function Home() {
     }
   };
 
+  // Show Auth screen if not authenticated
+  if (!user) {
+    return <Auth user={null} onAuthChange={handleAuthChange} />;
+  }
+
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       {/* Header */}
@@ -112,6 +169,7 @@ export default function Home() {
                 </p>
               </div>
             </div>
+            <Auth user={user} onAuthChange={handleAuthChange} />
           </div>
           <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
         </div>
@@ -119,19 +177,30 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeTab === 'dashboard' && (
-          <div className="space-y-6">
-            <DashboardView
-              habits={habits}
-              onToggleHabit={handleToggleHabit}
-              onDeleteHabit={handleDeleteHabit}
-            />
-            <AddHabitForm onAddHabit={handleAddHabit} />
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
+              <p className="text-zinc-600 dark:text-zinc-400">Cargando tus hábitos...</p>
+            </div>
           </div>
-        )}
+        ) : (
+          <>
+            {activeTab === 'dashboard' && (
+              <div className="space-y-6">
+                <DashboardView
+                  habits={habits}
+                  onToggleHabit={handleToggleHabit}
+                  onDeleteHabit={handleDeleteHabit}
+                />
+                <AddHabitForm onAddHabit={handleAddHabit} />
+              </div>
+            )}
 
-        {activeTab === 'reports' && (
-          <ReportsView habits={habits} />
+            {activeTab === 'reports' && (
+              <ReportsView habits={habits} />
+            )}
+          </>
         )}
       </main>
 

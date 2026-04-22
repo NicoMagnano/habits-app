@@ -1,22 +1,18 @@
 import { supabase } from './supabase';
 import { Habit } from '@/types';
 
-// Nota: Asegúrate de haber creado la tabla "habits" en Supabase con las siguientes columnas:
-// - id (uuid, primary key)
-// - name (text)
-// - description (text)
-// - daily_goal (integer)
-// - completed_dates (jsonb array)
-// - color (text)
-// - created_at (timestamp)
-// - updated_at (timestamp)
-// - user_id (uuid, opcional si usas autenticación)
-
 export async function fetchHabits(): Promise<Habit[]> {
   try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.error('User not authenticated');
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('habits')
       .select('*')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -38,6 +34,11 @@ export async function fetchHabits(): Promise<Habit[]> {
 
 export async function createHabit(habit: Omit<Habit, 'id' | 'createdAt'>) {
   try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error('User not authenticated');
+    }
+
     const { data, error } = await supabase
       .from('habits')
       .insert([
@@ -48,6 +49,7 @@ export async function createHabit(habit: Omit<Habit, 'id' | 'createdAt'>) {
           color: habit.color,
           completed_dates: habit.completedDates,
           created_at: new Date().toISOString(),
+          user_id: user.id,
         },
       ])
       .select();
@@ -62,6 +64,11 @@ export async function createHabit(habit: Omit<Habit, 'id' | 'createdAt'>) {
 
 export async function updateHabit(id: string, updates: Partial<Habit>) {
   try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error('User not authenticated');
+    }
+
     const { data, error } = await supabase
       .from('habits')
       .update({
@@ -73,6 +80,7 @@ export async function updateHabit(id: string, updates: Partial<Habit>) {
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
+      .eq('user_id', user.id)
       .select();
 
     if (error) throw error;
@@ -85,10 +93,16 @@ export async function updateHabit(id: string, updates: Partial<Habit>) {
 
 export async function deleteHabit(id: string) {
   try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error('User not authenticated');
+    }
+
     const { error } = await supabase
       .from('habits')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', user.id);
 
     if (error) throw error;
   } catch (error) {
