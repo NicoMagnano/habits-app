@@ -6,6 +6,8 @@ export interface Habit {
   createdAt: Date;
   completedDates: string[]; // YYYY-MM-DD format
   color: string;
+  icon?: string; // lucide-react icon name
+  scheduleDays?: string[]; // ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
 }
 
 export interface DailyCompletion {

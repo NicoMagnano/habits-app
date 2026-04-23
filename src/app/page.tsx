@@ -103,6 +103,8 @@ export default function Home() {
           description: newHabit.description,
           dailyGoal: newHabit.daily_goal,
           color: newHabit.color,
+          icon: newHabit.icon,
+          scheduleDays: newHabit.schedule_days,
           createdAt: new Date(newHabit.created_at),
           completedDates: newHabit.completed_dates || [],
         };
@@ -139,9 +141,14 @@ export default function Home() {
   const handleDeleteHabit = async (habitId: string) => {
     try {
       await deleteHabit(habitId);
-      setHabits(habits.filter((habit) => habit.id !== habitId));
+      // Refrescar la lista de hábitos desde la base de datos para garantizar sincronización
+      const updatedHabits = await fetchHabits();
+      setHabits(updatedHabits);
     } catch (error) {
       console.error('Error deleting habit:', error);
+      // Refrescar en caso de error también, para asegurar consistencia
+      const updatedHabits = await fetchHabits();
+      setHabits(updatedHabits);
     }
   };
 

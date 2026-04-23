@@ -23,6 +23,8 @@ export async function fetchHabits(): Promise<Habit[]> {
       description: item.description,
       dailyGoal: item.daily_goal,
       color: item.color,
+      icon: item.icon,
+      scheduleDays: item.schedule_days,
       createdAt: new Date(item.created_at),
       completedDates: item.completed_dates || [],
     })) || [];
@@ -47,6 +49,8 @@ export async function createHabit(habit: Omit<Habit, 'id' | 'createdAt'>) {
           description: habit.description,
           daily_goal: habit.dailyGoal,
           color: habit.color,
+          icon: habit.icon,
+          schedule_days: habit.scheduleDays,
           completed_dates: habit.completedDates,
           created_at: new Date().toISOString(),
           user_id: user.id,
@@ -76,6 +80,8 @@ export async function updateHabit(id: string, updates: Partial<Habit>) {
         ...(updates.description !== undefined && { description: updates.description }),
         ...(updates.dailyGoal && { daily_goal: updates.dailyGoal }),
         ...(updates.color && { color: updates.color }),
+        ...(updates.icon && { icon: updates.icon }),
+        ...(updates.scheduleDays && { schedule_days: updates.scheduleDays }),
         ...(updates.completedDates && { completed_dates: updates.completedDates }),
         updated_at: new Date().toISOString(),
       })

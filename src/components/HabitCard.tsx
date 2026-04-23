@@ -1,7 +1,7 @@
 'use client';
 
 import { Habit } from '@/types';
-import { CheckCircle2, Circle, Trash2, Zap } from 'lucide-react';
+import { CheckCircle2, Circle, Trash2, Zap, Dumbbell, Book, Apple, Moon, Heart, Music, Code } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -12,6 +12,17 @@ interface HabitCardProps {
   onDelete: (habitId: string) => Promise<void>;
 }
 
+const iconMap: Record<string, any> = {
+  Zap,
+  Dumbbell,
+  Book,
+  Apple,
+  Moon,
+  Heart,
+  Music,
+  Code,
+};
+
 export function HabitCard({
   habit,
   isCompletedToday,
@@ -20,20 +31,26 @@ export function HabitCard({
 }: HabitCardProps) {
   const completionCount = habit.completedDates.length;
   const today = format(new Date(), 'yyyy-MM-dd');
+  const IconComponent = habit.icon && iconMap[habit.icon] ? iconMap[habit.icon] : Zap;
 
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
+            <IconComponent className="w-5 h-5 text-emerald-500" />
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
               {habit.name}
             </h3>
-            <Zap className="w-5 h-5 text-emerald-500" />
           </div>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
             {habit.description}
           </p>
+          {habit.scheduleDays && habit.scheduleDays.length > 0 && (
+            <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-2">
+              {habit.scheduleDays.join(', ')}
+            </p>
+          )}
         </div>
         <button
           onClick={async () => await onDelete(habit.id)}
